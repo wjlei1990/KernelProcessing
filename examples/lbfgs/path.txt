@@ -1,0 +1,4 @@
+1
+/lustre/atlas/proj-shared/geo111/Wenjie/kernels_M22/post_proc/10/kernels_precond.bp
+/lustre/atlas/proj-shared/geo111/Wenjie/kernels_M22/post_proc/10/model_M22-0.0150/dkernels.bp
+/lustre/atlas/proj-shared/geo111/Wenjie/kernels_M23/benchmark/new/10/kernels_precond.bp
