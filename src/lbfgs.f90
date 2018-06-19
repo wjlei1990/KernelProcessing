@@ -167,6 +167,8 @@ module lbfgs_subs
 end module lbfgs_subs
 
 program main
+  use mpi
+  use adios_read_mod
   use lbfgs_subs
   use AdiosIO, only : write_bp_file, calculate_jacobian_matrix
   use global, only : init_mpi

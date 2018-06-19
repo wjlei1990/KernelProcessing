@@ -69,7 +69,6 @@ module ConjugateGradient
     call Parallel_ComputeL2normSquare(gradient_0, nkernels, jacobian, beta_down)
 
     beta = beta_up / beta_down
-    write(*, *) "Initial beta: ", beta
     ! Restart condition 1: beta must be >= 0
     if (beta < 0.0) then
       if (myrank == 0) write(*, *) "Beta change by restart condition(beta>=0): ", beta, "-> 0.0"
@@ -101,7 +100,7 @@ module ConjugateGradient
     real(kind=CUSTOM_REAL) :: beta
 
     call get_beta_old(gradient_0, gradient_1, beta)
-    !call get_beta(gradient_0, gradient_1, jacobian, beta)
+    call get_beta(gradient_0, gradient_1, jacobian, beta)
 
     if(myrank == 0) write(*, *) "Final beta used: ", beta
 
@@ -145,6 +144,7 @@ end subroutine get_sys_args
 
 program main
   use mpi
+  use adios_read_mod
   use global
   use AdiosIO
   use ConjugateGradient

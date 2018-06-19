@@ -20,6 +20,7 @@ end subroutine get_sys_args
 
 program main
   use mpi
+  use adios_read_mod
   use global
   use AdiosIO
 
