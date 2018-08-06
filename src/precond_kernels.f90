@@ -37,7 +37,7 @@ module precond_kernels_sub
     real(CUSTOM_REAL), dimension(:, :, :, :), intent(inout) :: hess, invHess
     real(CUSTOM_REAL), intent(in) :: threshold
 
-    real(kind=CUSTOM_REAL):: maxh, maxh_all, minh, minh_all
+    real(kind=CUSTOM_REAL):: maxh_all, minh_all
 
     call max_all_all_cr(maxval(hess), maxh_all)
     call min_all_all_cr(minval(hess), minh_all)
@@ -81,7 +81,7 @@ program precond_kernels
 
   implicit none
 
-  real(kind=CUSTOM_REAL), parameter :: THRESHOLD_HESS=1.0e-3
+  real(kind=CUSTOM_REAL), parameter :: THRESHOLD_HESS=5.0e-4
 
   integer, parameter :: NKERNELS = 6    !bulk_betah, bulk_betav, bulk_c, eta
   character(len=500), parameter :: kernel_names(NKERNELS) = &
