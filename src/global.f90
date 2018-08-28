@@ -30,6 +30,9 @@ module global
   integer, parameter :: IFLAG_220_80 = 3
   integer, parameter :: IFLAG_670_220 = 4
 
+  double precision, parameter :: PI = 3.141592653589793d0
+  double precision, parameter :: DEGREES_TO_RADIANS = PI / 180.d0
+
   ! MPI variable that need to be init in the main program
   integer :: myrank, nprocs
 
