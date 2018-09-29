@@ -12,7 +12,7 @@ adios_inc=$(shell adios_config -cf)
 
 objects= $(OBJDIR)/adios_helpers_definitions.o $(OBJDIR)/adios_helpers_writers.o $(OBJDIR)/adios_helpers.o $(OBJDIR)/gll_library.o $(OBJDIR)/global.o $(OBJDIR)/AdiosIO.o
 
-all: $(BINDIR)/xsteepDescent $(BINDIR)/xcg_direction $(BINDIR)/xlbfgs $(BINDIR)/xsum_kernels $(BINDIR)/xprecond_kernels $(BINDIR)/xmerge_kernels $(BINDIR)/xupdate_model $(BINDIR)/xmodel_perturb_ref $(BINDIR)/xgauss_psf
+all: $(BINDIR)/xsteepDescent $(BINDIR)/xcg_direction $(BINDIR)/xlbfgs $(BINDIR)/xsum_kernels $(BINDIR)/xprecond_kernels $(BINDIR)/xmerge_kernels $(BINDIR)/xupdate_model $(BINDIR)/xmodel_perturb_ref $(BINDIR)/xgauss_psf $(BINDIR)/xblend_model
 
 $(OBJDIR)/global.o: $(SRCDIR)/global.f90 $(OBJDIR)/gll_library.o
 	$(MPIFC) $(FCFLAGS) -c $< -o $@
@@ -50,6 +50,9 @@ $(OBJDIR)/model_perturb_ref.o: $(SRCDIR)/model_perturb_ref.f90  $(objects)
 $(OBJDIR)/gaussian_perturb_psf.o: $(SRCDIR)/gaussian_perturb_psf.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
+$(OBJDIR)/blend_model.o: $(SRCDIR)/blend_model.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
@@ -78,6 +81,9 @@ $(BINDIR)/xmodel_perturb_ref: $(OBJDIR)/model_perturb_ref.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xgauss_psf: $(OBJDIR)/gaussian_perturb_psf.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xblend_model: $(OBJDIR)/blend_model.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 clean:

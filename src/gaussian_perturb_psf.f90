@@ -9,7 +9,7 @@ module gpp_mod
 
   integer, parameter :: NKERNELS = 4
   character(len=500), dimension(NKERNELS), parameter :: kernel_names = &
-    (/character(len=150) :: "bulk_c_kl_crust_mantle", &
+    (/character(len=500) :: "bulk_c_kl_crust_mantle", &
                             "bulk_betav_kl_crust_mantle", &
                             "bulk_betah_kl_crust_mantle", &
                             "eta_kl_crust_mantle"/)
