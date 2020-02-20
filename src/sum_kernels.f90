@@ -115,7 +115,7 @@ program sum_kernels
     ! ------------------------------------------------------------
     ! Construct the path of individual kernel files (User-defined)
     ! ------------------------------------------------------------
-    kernel_file = trim(kernel_dir)//'/'//trim(eventname)//'/OUTPUT_FILES/kernels.bp'
+    kernel_file = trim(kernel_dir)//'/'//trim(eventname)//'.kernels.bp'
     call read_bp_file_real(kernel_file, kernel_names, kernels)
 
     ! only keep the abs value of the hess kernel

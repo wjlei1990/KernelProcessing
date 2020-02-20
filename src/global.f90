@@ -22,6 +22,8 @@ module global
   double precision, parameter :: R_EARTH_KM = R_EARTH / 1000.d0
 
   real(kind=CUSTOM_REAL), parameter :: FOUR_THIRDS = 4._CUSTOM_REAL/3._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: TWO_THIRDS = 2._CUSTOM_REAL/3._CUSTOM_REAL
+  real(kind=CUSTOM_REAL), parameter :: ONE_THIRD = 1._CUSTOM_REAL/3._CUSTOM_REAL
 
   ! flags for idoubling
   integer, parameter :: IFLAG_80_MOHO = 2
