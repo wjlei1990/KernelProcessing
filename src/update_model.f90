@@ -54,7 +54,7 @@ module model_update_tiso
 
   implicit none
 
-  logical, parameter :: use_depth_maximum = .true.  ! false
+  logical, parameter :: use_depth_maximum = .false.  ! false
   ! ======================================================
   ! density scaling factor with shear perturbations
   ! see e.g. Montagner & Anderson (1989), Panning & Romanowicz (2006)
@@ -232,8 +232,8 @@ module model_update_tiso
       if(myrank == 0) then
         write(*, *) 'Using vsv(all depth) as maximum'
         write(*, '(A, E16.8)') 'max value on rank 0:             ', vmax
-        write(*, '(A, E16.8, A)') 'Depth of max value on rank 0: ', &
-          R_EARTH_KM * (1.0 - vmax_depth) , " km"
+        !write(*, '(A, E16.8, A)') 'Depth of max value on rank 0: ', &
+        !  R_EARTH_KM * (1.0 - vmax_depth) , " km"
       endif
     endif
 

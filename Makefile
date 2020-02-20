@@ -10,6 +10,9 @@ FCFLAGS=-O3 -Wall -J $(OBJDIR) -I $(OBJDIR)
 adios_link=$(shell adios_config -lf)
 adios_inc=$(shell adios_config -cf)
 
+#adios_link=$(shell /ccs/home/ccui/adios-gcc/adios_config -lf)
+#adios_inc=$(shell /ccs/home/ccui/adios-gcc/adios_config -cf)
+
 objects= $(OBJDIR)/adios_helpers_definitions.o $(OBJDIR)/adios_helpers_writers.o $(OBJDIR)/adios_helpers.o $(OBJDIR)/gll_library.o $(OBJDIR)/global.o $(OBJDIR)/AdiosIO.o
 
 all: $(BINDIR)/xsteepDescent $(BINDIR)/xcg_direction $(BINDIR)/xlbfgs $(BINDIR)/xsum_kernels $(BINDIR)/xprecond_kernels $(BINDIR)/xmerge_kernels $(BINDIR)/xupdate_model $(BINDIR)/xmodel_perturb_ref $(BINDIR)/xgauss_psf $(BINDIR)/xblend_model

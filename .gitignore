@@ -33,3 +33,10 @@
 
 *.log
 bin/x*
+
+
+examples/*
+*.swp
+*.bash
+log.*
+
