@@ -71,7 +71,7 @@ module perturb_subs
 
     tmpArr0 = (ref_model(:,:,:,:,vsh_idx) - ref_model(:,:,:,:,vsv_idx)) / vs_0
     tmpArr1 = (new_model(:,:,:,:,vsh_idx) - new_model(:,:,:,:,vsv_idx)) / vs_1
-    dvsv_vsh_ratio_2 = log(tmpArr0 / tmpArr1)
+    dvsv_vsh_ratio_2 = tmpArr1 - tmpArr0
 
     perturb_model(:,:,:,:,7) = dvp
     perturb_model(:,:,:,:,8) = dvs
