@@ -10,7 +10,7 @@
 
 module precond_kernels_sub
   use mpi
-  use global, only : max_all_all_cr, min_all_all_cr, CUSTOM_REAL, exit_mpi, &
+  use global_var, only : max_all_all_cr, min_all_all_cr, CUSTOM_REAL, exit_mpi, &
                      myrank
   implicit none
 
@@ -82,8 +82,8 @@ program precond_kernels
   use mpi
   use adios_read_mod
   use AdiosIO
-  use global, only : NGLLX, NGLLY, NGLLZ, NSPEC, myrank, CUSTOM_REAL
-  use global, only : init_mpi
+  use global_var, only : NGLLX, NGLLY, NGLLZ, NSPEC, myrank, CUSTOM_REAL
+  use global_var, only : init_mpi
   use precond_kernels_sub
 
   implicit none

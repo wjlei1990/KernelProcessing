@@ -1,6 +1,6 @@
 subroutine get_sys_args(grad_file, direction_file)
 
-  use global, only : myrank, exit_mpi
+  use global_var, only : myrank, exit_mpi
 
   character(len=500), intent(inout):: grad_file, direction_file
 
@@ -21,7 +21,7 @@ end subroutine get_sys_args
 program main
   use mpi
   use adios_read_mod
-  use global
+  use global_var
   use AdiosIO
 
   integer, parameter :: NKERNELS = 4

@@ -1,4 +1,4 @@
-module global
+module global_var
 
   use mpi
   implicit none
@@ -281,4 +281,4 @@ module global
     call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ier)
   end subroutine init_mpi
 
-end module global
+end module global_var

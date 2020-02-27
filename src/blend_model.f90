@@ -2,9 +2,9 @@ module model_blend_subs
 
   use mpi
   use AdiosIO
-  use global, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
-  use global, only : DEGREES_TO_RADIANS
-  use global, only : init_mpi, exit_mpi, max_all_all_cr, min_all_all_cr
+  use global_var, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
+  use global_var, only : DEGREES_TO_RADIANS
+  use global_var, only : init_mpi, exit_mpi, max_all_all_cr, min_all_all_cr
 
   integer, parameter :: NPARS = 6
   character(len=500), dimension(NPARS), parameter :: parameters = &

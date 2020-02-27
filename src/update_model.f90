@@ -48,8 +48,8 @@
 module model_update_tiso
 
   use mpi
-  use global, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
-  use global, only : max_all_all_cr, min_all_all_cr, init_mpi, exit_mpi
+  use global_var, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
+  use global_var, only : max_all_all_cr, min_all_all_cr, init_mpi, exit_mpi
   use AdiosIO
 
   implicit none
@@ -144,7 +144,7 @@ module model_update_tiso
 
   subroutine read_solver_data(input_solver_file)
     use AdiosIO, only : calculate_jacobian_matrix
-    use global, only : Parallel_ComputeIntegral, sum_all_all_cr
+    use global_var, only : Parallel_ComputeIntegral, sum_all_all_cr
 
     character(len=*), intent(in) :: input_solver_file
 
@@ -182,7 +182,7 @@ module model_update_tiso
   end subroutine read_solver_data
 
   subroutine get_model_change(step_fac)
-    use global, only : R_EARTH_KM
+    use global_var, only : R_EARTH_KM
     implicit none
 
     real(kind=CUSTOM_REAL), intent(inout) :: step_fac
@@ -256,7 +256,7 @@ module model_update_tiso
   end subroutine get_model_change
 
   subroutine update_model()
-    use global , only : FOUR_THIRDS, IFLAG_80_MOHO, IFLAG_220_80, IFLAG_670_220
+    use global_var , only : FOUR_THIRDS, IFLAG_80_MOHO, IFLAG_220_80, IFLAG_670_220
     ! model update:
     ! transverse isotropic update only in layer Moho to 220
     ! (where SPECFEM3D_GLOBE considers TISO)
@@ -437,7 +437,7 @@ program main
   use mpi
   use adios_read_mod
   use model_update_tiso
-  use global, only : myrank
+  use global_var, only : myrank
 
   implicit none
   integer :: ier

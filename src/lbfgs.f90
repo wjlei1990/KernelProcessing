@@ -1,9 +1,9 @@
 module lbfgs_subs
 
   use mpi
-  use global, only : CUSTOM_REAL, myrank, exit_mpi, NGLLX, NGLLY, NGLLZ, &
+  use global_var, only : CUSTOM_REAL, myrank, exit_mpi, NGLLX, NGLLY, NGLLZ, &
                      NSPEC
-  use global, only : Parallel_ComputeInnerProduct, Parallel_ComputeL2normSquare
+  use global_var, only : Parallel_ComputeInnerProduct, Parallel_ComputeL2normSquare
   use AdiosIO, only : read_bp_file_real
   implicit none
 
@@ -180,7 +180,7 @@ program main
   use adios_read_mod
   use lbfgs_subs
   use AdiosIO, only : write_bp_file, calculate_jacobian_matrix
-  use global, only : init_mpi
+  use global_var, only : init_mpi
   implicit none
 
   ! Number of previous iteration used in L-BFGS

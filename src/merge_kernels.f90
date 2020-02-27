@@ -1,5 +1,5 @@
 module merge_kernels_sub
-  use global, only : exit_mpi, myrank
+  use global_var, only : exit_mpi, myrank
   implicit none
 
   contains
@@ -28,8 +28,8 @@ program merge_kernels
   use mpi
   use adios_read_mod
   use AdiosIO
-  use global, only : NSPEC, NGLLX, NGLLY, NGLLZ, CUSTOM_REAL
-  use global, only : init_mpi
+  use global_var, only : NSPEC, NGLLX, NGLLY, NGLLZ, CUSTOM_REAL
+  use global_var, only : init_mpi
   use merge_kernels_sub
 
   implicit none

@@ -1,5 +1,5 @@
 module perturb_subs
-  use global, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank, init_mpi
+  use global_var, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank, init_mpi
   implicit none
 
   integer, parameter :: nvars = 6
@@ -22,8 +22,8 @@ module perturb_subs
 
   contains
   subroutine get_sys_args(ref_model_file, new_model_file, outputfn)
-    use global, only : myrank
-    use global, only : exit_mpi
+    use global_var, only : myrank
+    use global_var, only : exit_mpi
     implicit none
     character(len=500), intent(in) :: ref_model_file, new_model_file, outputfn
 
@@ -45,7 +45,7 @@ module perturb_subs
 
   subroutine calculate_other_perturbation()
 
-    use global, only : ONE_THIRD, TWO_THIRDS
+    use global_var, only : ONE_THIRD, TWO_THIRDS
 
     real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ,NSPEC) :: dvp, dvs, &
       dvp_vs_ratio, dvsv_vsh_ratio_1, dvsv_vsh_ratio_2
@@ -87,7 +87,7 @@ program main
 
   use mpi
   use adios_read_mod
-  use global, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank, init_mpi
+  use global_var, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank, init_mpi
   use AdiosIO
   use perturb_subs
   implicit none

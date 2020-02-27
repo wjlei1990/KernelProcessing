@@ -4,7 +4,7 @@
 module ConjugateGradient
 
   use mpi
-  use global, only : CUSTOM_REAL, CUSTOM_MPI_TYPE, myrank, &
+  use global_var, only : CUSTOM_REAL, CUSTOM_MPI_TYPE, myrank, &
     Parallel_ComputeL2normSquare, Parallel_ComputeInnerProduct, &
     sum_all_all_cr
 
@@ -112,7 +112,7 @@ end module ConjugateGradient
 subroutine get_sys_args(grad_0_file, grad_1_file, &
                         direction_0_file, direction_1_file, solver_file)
 
-  use global, only : myrank, exit_mpi
+  use global_var, only : myrank, exit_mpi
 
   character(len=*), intent(inout):: grad_0_file, grad_1_file
   character(len=*), intent(inout):: direction_0_file, direction_1_file
@@ -145,7 +145,7 @@ end subroutine get_sys_args
 program main
   use mpi
   use adios_read_mod
-  use global
+  use global_var
   use AdiosIO
   use ConjugateGradient
 

@@ -1,6 +1,6 @@
 module sum_kernels_subs
 
-  use global, only : CUSTOM_REAL, myrank, exit_mpi
+  use global_var, only : CUSTOM_REAL, myrank, exit_mpi
   implicit none
 
   contains
@@ -66,8 +66,8 @@ program sum_kernels
 ! Princeton, August 2013
   use mpi
   use adios_read_mod
-  use global, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank
-  use global, only : init_mpi, exit_mpi
+  use global_var, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, NSPEC, myrank
+  use global_var, only : init_mpi, exit_mpi
   use AdiosIO
   use sum_kernels_subs
 

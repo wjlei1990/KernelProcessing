@@ -5,7 +5,7 @@ module AdiosIO
   use adios_write_mod
   use adios_helpers_mod
 
-  use global, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, nspec, &
+  use global_var, only : CUSTOM_REAL, NGLLX, NGLLY, NGLLZ, nspec, &
     ADIOS_TRANSPORT_METHOD, ADIOS_BUFFER_SIZE_IN_MB, &
     myrank, nprocs
 
@@ -211,7 +211,7 @@ module AdiosIO
   end subroutine write_bp_file
 
   subroutine calculate_jacobian_matrix(solver_file, jacobian)
-    use global, only : CUSTOM_REAL, build_jacobian
+    use global_var, only : CUSTOM_REAL, build_jacobian
     character(len=*), intent(in) :: solver_file
     real(kind=CUSTOM_REAL), dimension(:, :, :, :), intent(out) :: jacobian
 
