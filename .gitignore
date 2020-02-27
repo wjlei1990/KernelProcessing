@@ -37,4 +37,4 @@ bin/x*
 examples/*
 *.swp
 *.bash
-log.*
+log.*.o*
