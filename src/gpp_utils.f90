@@ -1,9 +1,14 @@
-module gpp_mod
+! ----------------------------------
+! gaussian perturbation utils
+! ----------------------------------
+
+module gpp_utils
   use mpi
   use AdiosIO
-  use global, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
-  use global, only : R_EARTH_KM, DEGREES_TO_RADIANS
-  use global, only : init_mpi, exit_mpi, max_all_all_cr, min_all_all_cr
+  use adios_read_mod
+  use global_var, only : myrank, nprocs, NGLLX, NGLLY, NGLLZ, NSPEC, NGLOB, CUSTOM_REAL
+  use global_var, only : R_EARTH_KM, DEGREES_TO_RADIANS
+  use global_var, only : init_mpi, exit_mpi, max_all_all_cr, min_all_all_cr
 
   implicit None
 
@@ -41,15 +46,15 @@ module gpp_mod
 
   end subroutine get_sys_args
 
-  subroutine convert_to_xyz(r, lat, lon, x, y, z)
-    real(kind=CUSTOM_REAL), intent(in) :: r, lat, lon
+  subroutine convert_to_xyz(dep, lat, lon, x, y, z)
+    real(kind=CUSTOM_REAL), intent(in) :: dep, lat, lon
     real(kind=CUSTOM_REAL), intent(out) :: x, y, z
 
     double precision :: r1, phi, theta
 
     phi = lon * DEGREES_TO_RADIANS
     theta = (90.0 - lat) * DEGREES_TO_RADIANS
-    r1 = (R_EARTH_KM - r ) / R_EARTH_KM
+    r1 = (R_EARTH_KM - dep ) / R_EARTH_KM
 
     x = REAL(r1 * sin(theta) * cos(phi), CUSTOM_REAL)
     y = REAL(r1 * sin(theta) * sin(phi), CUSTOM_REAL)
@@ -184,13 +189,13 @@ module gpp_mod
     endif
   end subroutine add_gaussian_perturb_elliptic
 
-  subroutine add_gaussian_perturb_hv(r, lat, lon, sigmah0, sigmav0, perturb_idx)
+  subroutine add_gaussian_perturb_hv(dep, lat, lon, perturb_sign, sigmah0, sigmav0, perturb_idx)
     ! Version by Hejun
     ! assign different horizontal and vertical length
     ! This one should be used with careful check because the shape of
     ! the preturbations will be doom-liked sphere.(not sysmetircal with
     ! regarding to the top and bottom)
-    real(kind=CUSTOM_REAL), intent(in) :: r, lat, lon, sigmah0, sigmav0
+    real(kind=CUSTOM_REAL), intent(in) :: dep, lat, lon, perturb_sign, sigmah0, sigmav0
     integer, intent(in) :: perturb_idx
 
     real(kind=CUSTOM_REAL) :: xcent, ycent, zcent, sigmah, sigmav
@@ -201,7 +206,7 @@ module gpp_mod
     if (myrank == 0) then
       write(*, '(A)') "|--> Gaussian HV"
       write(*, '(A, F8.2, A, F8.2, A, F8.2, A, F8.2, A, F8.2, A)') &
-        "|    Depth=", r, "km, lat=", lat, ", lon=", lon, &
+        "|    Depth=", dep, "km, lat=", lat, ", lon=", lon, &
         ", sigmav0=", sigmav0, "km, sigmah0=", sigmah0, "km"
     endif
 
@@ -209,7 +214,7 @@ module gpp_mod
     sigmah = REAL(sigmah0 / R_EARTH_KM, CUSTOM_REAL)
     sigmav = REAL(sigmav0 / R_EARTH_KM, CUSTOM_REAL)
 
-    call convert_to_xyz(r, lat, lon, xcent, ycent, zcent)
+    call convert_to_xyz(dep, lat, lon, xcent, ycent, zcent)
     if (myrank == 0) then
       write(*, '(A, ES18.3, A, ES18.3, A, ES18.3)') &
         "|    xyz: ", xcent, ",", ycent, ",", zcent
@@ -241,10 +246,7 @@ module gpp_mod
             theta = acos( ratio )
             disth = r1 * theta
 
-            ! postive search direction --> fast anomaly
-            gauss = exp(-(disth / sigmah) ** 2 - (distv / sigmav) ** 2)
-            ! negative search direction --> slow anomaly
-            !gauss = -exp(- (disth / sigmah) ** 2 - (distv / sigmav) ** 2)
+            gauss = perturb_sign * exp(-(disth / sigmah) ** 2 - (distv / sigmav) ** 2)
 
             kernels(i,j,k,ispec,perturb_idx) = kernels(i,j,k,ispec,perturb_idx) + gauss
           end do
@@ -261,91 +263,16 @@ module gpp_mod
     endif
   end subroutine add_gaussian_perturb_hv
 
-end module gpp_mod
+  subroutine read_model_file(input_solver_file)
+    character(len=*), intent(in) :: input_solver_file
 
+    integer :: ier
 
-!-------------------------------------
-! AFAR:    (lat, lon, dep) = (0,  28, 1250km)
-! Pacific: (lat, lon, dep) = (-10, -170, 1250km)
-!-------------------------------------
-program gaussian_perturb_psf
+    call adios_read_init_method(ADIOS_READ_METHOD_BP, MPI_COMM_WORLD, "verbose=1", ier)
+    call read_bp_file_int(input_solver_file, "reg1/ibool", ibool)
+    call read_bp_file_real(input_solver_file, "reg1/x_global", x_glob)
+    call read_bp_file_real(input_solver_file, "reg1/y_global", y_glob)
+    call read_bp_file_real(input_solver_file, "reg1/z_global", z_glob)
+  end subroutine read_model_file
 
-  use mpi
-  use adios_read_mod
-  use gpp_mod
-
-  implicit none
-
-  integer, parameter :: perturb_idx = 2
-  character(len=500):: input_solver_file, output_file
-  integer:: ier
-
-  call init_mpi()
-  call get_sys_args(input_solver_file, output_file)
-
-  if( perturb_idx /= betav_kl_idx .or. &
-      trim(kernel_names(perturb_idx)) /= "bulk_betav_kl_crust_mantle" ) then
-    call exit_mpi("Checking perturb_idx is right (not betav perturbation now)!")
-  endif
-
-  if(myrank == 0) write(*, '(A)') "|<-------- Read model files -------->|"
-  call adios_read_init_method(ADIOS_READ_METHOD_BP, MPI_COMM_WORLD, "verbose=1", ier)
-  call read_bp_file_int(input_solver_file, "reg1/ibool", ibool)
-  call read_bp_file_real(input_solver_file, "reg1/x_global", x_glob)
-  call read_bp_file_real(input_solver_file, "reg1/y_global", y_glob)
-  call read_bp_file_real(input_solver_file, "reg1/z_global", z_glob)
-
-  if(myrank == 0) write(*, '(A)') "|<-------- Add gaussian perturb -------->|"
-  kernels(:,:,:,:, :) = 0.0_CUSTOM_REAL
-
-  ! Currently perturbations are hard-coded in the program
-  ! AFAR
-  !if(myrank == 0) write(*, '(A)') "|<-------- Afar Plume -------->|"
-  !!! call add_gaussian_perturb_sphere(1250.0, 0.0, 28.0, 250.0, perturb_idx)
-  !!! call add_gaussian_perturb_hv(2000.0, 0.0, 28.0, 400.0, 400.0, perturb_idx)
-  !!! call add_gaussian_perturb_elliptic(300.0, -10.0, 28.0, 500.0, 250.0, perturb_idx)
-  !call add_gaussian_perturb_hv(2000.0, -18.0, 20.0, 400.0, 400.0, perturb_idx)
-
-  ! Pacific Plume
-  !if(myrank == 0) write(*, '(A)') "|<-------- Pacific Plume -------->|"
-  !call add_gaussian_perturb_hv(1250.0, -10.0, -170.0, 500.0, 300.0, perturb_idx)
-  !call add_gaussian_perturb_hv(2300.0, -10.0, -170.0, 600.0, 400.0, perturb_idx)
-
-  ! Hawaii
-  !if(myrank == 0) write(*, '(A)') "|<-------- Hawaii -------->|"
-  !call add_gaussian_perturb_hv(2300.0, 19.5, -155.5, 500.0, 250.0, perturb_idx)
-
-  ! Yellowstone
-  !if(myrank == 0) write(*, '(A)') "|<-------- Yellowstone -------->|"
-  !call add_gaussian_perturb_hv(300.0, 44.5, -110.4, 100.0, 100.0, perturb_idx)
-
-  !if(myrank == 0) write(*, '(A)') "|<-------- Yellowstone Complex -------->|"
-  !call add_gaussian_perturb_hv(200.0, 44.5, -110.4, 100.0, 100.0, perturb_idx)
-  !call add_gaussian_perturb_hv(500.0, 44.5, -110.4, 200.0, 200.0, perturb_idx)
-  !call add_gaussian_perturb_hv(1000.0, 44.5, -110.4, 250.0, 250.0, perturb_idx)
-  !call add_gaussian_perturb_hv(1600.0, 44.5, -110.4, 300.0, 300.0, perturb_idx)
-  !call add_gaussian_perturb_hv(2200.0, 44.5, -110.4, 300.0, 300.0, perturb_idx)
-  !call add_gaussian_perturb_hv(2800.0, 44.5, -110.4, 300.0, 300.0, perturb_idx)
-
-  ! USA Mid
-  !if(myrank == 0) write(*, '(A)') "|<-------- USA Mid -------->|"
-  !call add_gaussian_perturb_hv(500.0, 38.0, -98.0, 160.0, 160.0, perturb_idx)
-
-  ! USA East
-  !if(myrank == 0) write(*, '(A)') "|<-------- USA East -------->|"
-  !call add_gaussian_perturb_hv(1600.0, 36.0, -82.0, 250.0, 250.0, perturb_idx)
-
-  !if(myrank == 0) write(*, '(A)') "|<-------- East-Galapagos -------->|"
-  !call add_gaussian_perturb_hv(2500.0, -15.0, -100.0, 300.0, 300.0, perturb_idx)
-
-  if(myrank == 0) write(*, '(A)') "|<-------- Subduction Su -------->|"
-  call add_gaussian_perturb_hv(900.0, -6.0, 112.0, 200.0, 200.0, perturb_idx)
-
-  if(myrank == 0) write(*, '(A)'), "|<-------- Write gaussian perturb -------->|"
-  call write_bp_file(kernels, kernel_names, "KERNELS_GROUP", output_file)
-
-  if(myrank == 0) write(*, '(A)'), "|<-------- Done -------->|"
-  call adios_finalize(myrank, ier)
-  call MPI_FINALIZE(ier)
-
-end program gaussian_perturb_psf
+end module gpp_utils
