@@ -2,7 +2,7 @@ module lbfgs_subs
 
   use mpi
   use global, only : CUSTOM_REAL, myrank, exit_mpi, NGLLX, NGLLY, NGLLZ, &
-                        NSPEC
+                     NSPEC
   use global, only : Parallel_ComputeInnerProduct, Parallel_ComputeL2normSquare
   use AdiosIO, only : read_bp_file_real
   implicit none
@@ -69,8 +69,8 @@ module lbfgs_subs
       read(fh, '(A)') gradient_files(i)
       read(fh, '(A)') model_change_files(i)
       if(myrank == 0) then
-        write(*, '(A, I3, A, A)'), "[iter=", niter, "] grad file:   ", trim(gradient_files(i))
-        write(*, '(A, I3, A, A)'), "[iter=", niter, "] dkernel file:", trim(model_change_files(i))
+        write(*, '(A, I3, A, A)'), "[iter=", i, "] grad file:   ", trim(gradient_files(i))
+        write(*, '(A, I3, A, A)'), "[iter=", i, "] dkernel file:", trim(model_change_files(i))
       endif
     enddo
 
@@ -96,6 +96,7 @@ module lbfgs_subs
     allocate(sks(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS, niter))
     allocate(yks(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS, niter))
 
+    ! Read gradient
     do i=1, niter+1
       if(myrank == 0) write(*, '(A, I2, A, A)') &
         "Reading [iter=", i, "] Gradient: ", trim(gradient_files(i))
@@ -103,11 +104,13 @@ module lbfgs_subs
                              stored_gradients(:, :, :, :, :, i))
     enddo
 
+    ! Calculate the gradient change
     do i=1, niter
       yks(:, :, :, :, :, i) = &
         stored_gradients(:, :, :, :, :, i+1) - stored_gradients(:, :, :, :, :, i)
     enddo
 
+    ! Read Model Change
     do i=1, niter
       if(myrank == 0) write(*, '(A, I2, A, A)') &
         "Reading [iter=", i, "] dkernel: ", trim(model_change_files(i))
@@ -142,13 +145,17 @@ module lbfgs_subs
                                         NKERNELS, jacobian, tmp)
       ak_store(i) = pk_store(i) * tmp
 
+      if(myrank == 0) write(*, '(A, I2, A, i2, A, ES18.8, A, ES18.8)') &
+        "First Loop[iter=", i, "/", niter, "] pk=", pk_store(i), ", ak=", ak_store(i)
+
       direction = direction - ak_store(i) * yks(:, :, :, :, :, i)
     enddo
 
     ! Precondition
     call Parallel_ComputeL2normSquare(yks(:, :, :, :, :, niter), NKERNELS, &
-                                          jacobian, norm_y)
+                                      jacobian, norm_y)
     rhok = 1.0 / (pk_store(niter) * norm_y)
+    if(myrank == 0) write(*, '(A, ES18.8)') "Precondition coef: ", rhok
     direction = rhok * direction
 
     ! second round
@@ -157,6 +164,8 @@ module lbfgs_subs
                                         NKERNELS, jacobian, tmp)
       beta = pk_store(i) * tmp
 
+      if(myrank == 0) write(*, '(A, I3, A, I3, A, ES18.8)') &
+        "Second Loop[iter=", i, "/", niter, "] beta=", beta
       direction = direction + (ak_store(i) - beta) * sks(:, :, :, :, :, i)
     enddo
 

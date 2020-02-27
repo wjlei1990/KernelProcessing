@@ -33,3 +33,6 @@
 
 *.log
 bin/x*
+
+*.swp
+log.*.o*
