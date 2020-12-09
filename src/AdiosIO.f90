@@ -25,6 +25,7 @@ module AdiosIO
 
   interface read_bp_file_real
     module procedure read_bp_file_real_1d
+    module procedure read_bp_file_real_4d
     module procedure read_bp_file_real_5d
   end interface read_bp_file_real
 
@@ -103,6 +104,8 @@ module AdiosIO
     integer(kind=8) :: sel
     integer(kind=8), dimension(1) :: start, count_ad
 
+    data_array = 0.0
+
     call adios_read_open_file(read_handle, trim(bp_file), 0, &
                               MPI_COMM_WORLD, ier)
 
@@ -122,6 +125,40 @@ module AdiosIO
 
   end subroutine read_bp_file_real_1d
 
+  subroutine read_bp_file_real_4d(bp_file, varname, data_array)
+    ! Mainly used to read in multiple kernels(real) or models(vpv, vsv, ...) at once
+    ! Dimension of data_array: (NGLLX, NGLLY, NGLLZ, NSPEC, nkernels)
+    character(len=*), intent(in) :: bp_file
+    character(len=*), intent(in):: varname
+    real(kind=CUSTOM_REAL), dimension(:, :, :, :), intent(inout):: data_array
+
+    ! local variables
+    integer :: ier, local_dim
+    integer(kind=8) :: read_handle
+    integer(kind=8) :: sel
+    integer(kind=8), dimension(1) :: start, count_ad
+
+    data_array = 0.0
+
+    call adios_read_open_file(read_handle, trim(bp_file), 0, &
+                              MPI_COMM_WORLD, ier)
+
+    call adios_get_scalar(read_handle, trim(varname)//"/local_dim", &
+                          local_dim, ier)
+    start(1) = local_dim * myrank
+    !count_ad(1) = NGLLX * NGLLY * NGLLZ * nspec
+    count_ad(1) = local_dim
+
+    call adios_selection_boundingbox(sel, 1, start, count_ad)
+    call adios_schedule_read( &
+            read_handle, sel, trim(varname)//"/array", &
+            0, 1, data_array, ier)
+
+    call adios_perform_reads(read_handle, ier)
+    call adios_read_close(read_handle,ier)
+
+  end subroutine read_bp_file_real_4d
+
   subroutine read_bp_file_real_5d(bp_file, varnames, data_array)
     ! Mainly used to read in multiple kernels(real) or models(vpv, vsv, ...) at once
     ! Dimension of data_array: (NGLLX, NGLLY, NGLLZ, NSPEC, nkernels)
@@ -135,6 +172,8 @@ module AdiosIO
     integer(kind=8) :: read_handle
     integer(kind=8) :: sel
     integer(kind=8), dimension(1) :: start, count_ad
+
+    data_array = 0.0
 
     call adios_read_open_file(read_handle, trim(bp_file), 0, &
                               MPI_COMM_WORLD, ier)
@@ -208,6 +247,7 @@ module AdiosIO
     call adios_close(handle, ier)
     call MPI_Barrier(MPI_COMM_WORLD, ier)
     call adios_finalize(myrank, ier)
+
   end subroutine write_bp_file
 
   subroutine calculate_jacobian_matrix(solver_file, jacobian)

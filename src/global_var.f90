@@ -15,7 +15,7 @@ module global_var
   integer, parameter :: NGLOB = NGLOB_CRUST_MANTLE
 
   character(len=*), parameter :: ADIOS_TRANSPORT_METHOD = "MPI"
-  integer, parameter :: ADIOS_BUFFER_SIZE_IN_MB = 200
+  integer, parameter :: ADIOS_BUFFER_SIZE_IN_MB = 1000
 
   ! Earth
   double precision, parameter :: R_EARTH = 6371000.d0
@@ -279,6 +279,7 @@ module global_var
     call MPI_INIT(ier)
     call MPI_COMM_RANK(MPI_COMM_WORLD, myrank, ier)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ier)
+    if (myrank == 0) print*, "MPI init with nprocs=", nprocs
   end subroutine init_mpi
 
 end module global_var

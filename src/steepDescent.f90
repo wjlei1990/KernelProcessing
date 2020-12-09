@@ -45,13 +45,13 @@ program main
   call adios_read_init_method(ADIOS_READ_METHOD_BP, MPI_COMM_WORLD, &
                               "verbose=1", ier)
 
-  if (myrank == 0) write(*, *) "Start Reading"
+  if (myrank == 0) write(*, *) "Start Reading: ", trim(grad_file)
   call read_bp_file_real(grad_file, kernel_names, gradient)
 
   ! steep descent(just reverse the gradient as the search direction)
   direction = - gradient
 
-  if (myrank == 0) write(*, *) "Start Write"
+  if (myrank == 0) write(*, *) "Start Write: ", trim(direction_file)
   call write_bp_file(direction, kernel_names, "KERNEL_GROUPS", direction_file)
 
   call adios_finalize(myrank, ier)

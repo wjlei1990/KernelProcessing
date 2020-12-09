@@ -6,15 +6,39 @@ MPIFC=mpif90
 #MPIFC=ftn
 FCFLAGS=-O3 -Wall -J $(OBJDIR) -I $(OBJDIR)
 
-#adios_link=$(shell adios_config -lf)
-#adios_inc=$(shell adios_config -cf)
+adios_link=$(shell adios_config -lf)
+adios_inc=$(shell adios_config -cf)
 
-adios_link=$(shell /ccs/home/ccui/adios-gcc/adios_config -lf)
-adios_inc=$(shell /ccs/home/ccui/adios-gcc/adios_config -cf)
+#adios_link=$(shell /ccs/home/ccui/adios-gcc/adios_config -lf)
+#adios_inc=$(shell /ccs/home/ccui/adios-gcc/adios_config -cf)
 
 objects= $(OBJDIR)/adios_helpers_definitions.o $(OBJDIR)/adios_helpers_writers.o $(OBJDIR)/adios_helpers.o $(OBJDIR)/gll_library.o $(OBJDIR)/global_var.o $(OBJDIR)/AdiosIO.o
 
-all: $(BINDIR)/xsteepDescent $(BINDIR)/xcg_direction $(BINDIR)/xlbfgs $(BINDIR)/xsum_kernels $(BINDIR)/xprecond_kernels $(BINDIR)/xmerge_kernels $(BINDIR)/xupdate_model $(BINDIR)/xmodel_perturb_ref $(BINDIR)/xblend_model $(BINDIR)/xgauss_single $(BINDIR)/xgauss_multiple
+all: $(BINDIR)/xsteepDescent \
+	$(BINDIR)/xcg_direction \
+	$(BINDIR)/xlbfgs \
+	$(BINDIR)/xsum_kernels \
+	$(BINDIR)/xsum_azi_kernels \
+	$(BINDIR)/xprecond_kernels \
+	$(BINDIR)/xprecond_vp_vs_kernels \
+	$(BINDIR)/xprecond_azi_kernels \
+	$(BINDIR)/xmerge_kernels \
+	$(BINDIR)/xmerge_azi_kernels \
+	$(BINDIR)/xupdate_model \
+	$(BINDIR)/xmodel_perturb_ref \
+	$(BINDIR)/xblend_model \
+	$(BINDIR)/xgauss_single \
+	$(BINDIR)/xgauss_multiple \
+	$(BINDIR)/xbp2binary \
+	$(BINDIR)/xabs_kernel \
+	$(BINDIR)/xcompute_azi_params \
+	$(BINDIR)/xsrc_mask \
+	$(BINDIR)/xcompute_vp_vs_hess
+
+
+# ###################
+# Compile
+# ###################
 
 $(OBJDIR)/global_var.o: $(SRCDIR)/global_var.f90 $(OBJDIR)/gll_library.o
 	$(MPIFC) $(FCFLAGS) -c $< -o $@
@@ -28,10 +52,25 @@ $(OBJDIR)/adios_helpers.o: $(SRCDIR)/adios_helpers.f90 $(OBJDIR)/adios_helpers_d
 $(OBJDIR)/sum_kernels.o: $(SRCDIR)/sum_kernels.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
+$(OBJDIR)/sum_azi_kernels.o: $(SRCDIR)/sum_azi_kernels.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
 $(OBJDIR)/merge_kernels.o: $(SRCDIR)/merge_kernels.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
+$(OBJDIR)/merge_azi_kernels.o: $(SRCDIR)/merge_azi_kernels.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
 $(OBJDIR)/precond_kernels.o: $(SRCDIR)/precond_kernels.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/precond_azi_kernels.o: $(SRCDIR)/precond_azi_kernels.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/precond_vp_vs_kernels.o: $(SRCDIR)/precond_vp_vs_kernels.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/convert_adios_to_binary.o: $(SRCDIR)/convert_adios_to_binary.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
 $(OBJDIR)/steepDescent.o: $(SRCDIR)/steepDescent.f90 $(objects)
@@ -61,16 +100,47 @@ $(OBJDIR)/gaussian_perturb_single.o: $(SRCDIR)/gaussian_perturb_single.f90 $(obj
 $(OBJDIR)/gaussian_perturb_multiple.o: $(SRCDIR)/gaussian_perturb_multiple.f90 $(objects) $(OBJDIR)/gpp_utils.o
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
+$(OBJDIR)/abs_kernel.o: $(SRCDIR)/abs_kernel.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
+$(OBJDIR)/compute_azi_params.o: $(SRCDIR)/compute_azi_params.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
+$(OBJDIR)/apply_source_mask.o: $(SRCDIR)/apply_source_mask.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
+$(OBJDIR)/compute_vp_vs_hess.o: $(SRCDIR)/compute_vp_vs_hess.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
+# ######################
+# Link
+# ######################
+
 $(BINDIR)/xsum_kernels: $(OBJDIR)/sum_kernels.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xsum_azi_kernels: $(OBJDIR)/sum_azi_kernels.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xmerge_kernels: $(OBJDIR)/merge_kernels.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
+$(BINDIR)/xmerge_azi_kernels: $(OBJDIR)/merge_azi_kernels.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
 $(BINDIR)/xprecond_kernels: $(OBJDIR)/precond_kernels.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xprecond_azi_kernels: $(OBJDIR)/precond_azi_kernels.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xprecond_vp_vs_kernels: $(OBJDIR)/precond_vp_vs_kernels.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xbp2binary: $(OBJDIR)/convert_adios_to_binary.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xsteepDescent: $(OBJDIR)/steepDescent.o $(objects)
@@ -95,6 +165,18 @@ $(BINDIR)/xgauss_single: $(OBJDIR)/gaussian_perturb_single.o $(objects) $(OBJDIR
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xgauss_multiple: $(OBJDIR)/gaussian_perturb_multiple.o $(objects) $(OBJDIR)/gpp_utils.o
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xcompute_azi_params: $(OBJDIR)/compute_azi_params.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xabs_kernel: $(OBJDIR)/abs_kernel.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xsrc_mask: $(OBJDIR)/apply_source_mask.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xcompute_vp_vs_hess: $(OBJDIR)/compute_vp_vs_hess.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 clean:

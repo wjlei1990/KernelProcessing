@@ -193,7 +193,6 @@ module model_update_tiso
     double precision, parameter :: R_top = (R_EARTH_KM - 50.0 ) / R_EARTH_KM
     double precision, parameter :: R_bottom = (R_EARTH_KM - 600.0 ) / R_EARTH_KM
     real(kind=CUSTOM_REAL) :: r, vmax, vmax_depth, global_vmax, betav
-    real(kind=CUSTOM_REAL) :: step_length
 
     integer :: i, j, k, ispec, iglob
 
@@ -225,32 +224,26 @@ module model_update_tiso
           enddo
         enddo
       enddo
-      ! determines maximum kernel betav value within given radius
-      ! maximum of all processes stored in max_vsv
     else
+      ! maximum of all processes stored in max_vsv
       vmax = maxval(abs(kernels(:, :, :, :, betav_kl_idx)))
       if(myrank == 0) then
         write(*, *) 'Using vsv(all depth) as maximum'
-        write(*, '(A, E16.8)') 'max value on rank 0:             ', vmax
-        !write(*, '(A, E16.8, A)') 'Depth of max value on rank 0: ', &
-        !  R_EARTH_KM * (1.0 - vmax_depth) , " km"
       endif
     endif
 
-    if(myrank == 0) print*, "Initial Model Update:"
+    if(myrank == 0) print*, "Initial Model Update (before norm): "
     call stats_value_range(kernels, kernel_names)
 
     call max_all_all_cr(vmax, global_vmax)
-    step_length = step_fac / global_vmax
     if(myrank == 0) then
       print*, "--- Normalization ---"
-      write(*, '(A, ES16.8)') 'Using maximum:       ', global_vmax
-      write(*, '(A, ES16.8)') 'Step length:         ', step_fac
-      write(*, '(A, ES16.8)') 'Scaled step length:  ', step_length
+      write(*, '(A, ES16.8)') 'Using maximum to normalize: ', global_vmax
+      write(*, '(A, F16.8)') 'Step length:                ', step_fac
     endif
 
-    dmodels = step_length * kernels
-    if(myrank == 0) print*, "Scaled Model Update"
+    dmodels = step_fac * (kernels / global_vmax)
+    if(myrank == 0) print*, "Scaled Model Update: "
     call stats_value_range(dmodels, kernel_names)
 
   end subroutine get_model_change
@@ -295,7 +288,7 @@ module model_update_tiso
             alphah1 = 0._CUSTOM_REAL
 
             ! do not use transverse isotropy except if element is between d220 and Moho
-            if(.not. ( idoubling(ispec)== IFLAG_670_220 .or. idoubling(ispec)==IFLAG_220_80 &
+            if(.not. ( idoubling(ispec)==IFLAG_670_220 .or. idoubling(ispec)==IFLAG_220_80 &
                        .or. idoubling(ispec)==IFLAG_80_MOHO) ) then
 
               ! isotropic model update
