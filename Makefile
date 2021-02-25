@@ -1,9 +1,11 @@
 SRCDIR=src
 OBJDIR=obj
 BINDIR=bin
+
 FC=gfortran
 MPIFC=mpif90
 #MPIFC=ftn
+
 FCFLAGS=-O3 -Wall -J $(OBJDIR) -I $(OBJDIR)
 
 adios_link=$(shell adios_config -lf)
@@ -33,12 +35,15 @@ all: $(BINDIR)/xsteepDescent \
 	$(BINDIR)/xabs_kernel \
 	$(BINDIR)/xcompute_azi_params \
 	$(BINDIR)/xsrc_mask \
-	$(BINDIR)/xcompute_vp_vs_hess
+	$(BINDIR)/xcompute_vp_vs_hess \
+	$(BINDIR)/xrandom_probe_lbfgs
 
 
 # ###################
 # Compile
 # ###################
+$(OBJDIR)/random.o: $(SRCDIR)/random.f90
+	$(FC) $(FCFLAGS) -c $< -o $@
 
 $(OBJDIR)/global_var.o: $(SRCDIR)/global_var.f90 $(OBJDIR)/gll_library.o
 	$(MPIFC) $(FCFLAGS) -c $< -o $@
@@ -67,7 +72,10 @@ $(OBJDIR)/precond_kernels.o: $(SRCDIR)/precond_kernels.f90 $(objects)
 $(OBJDIR)/precond_azi_kernels.o: $(SRCDIR)/precond_azi_kernels.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
-$(OBJDIR)/precond_vp_vs_kernels.o: $(SRCDIR)/precond_vp_vs_kernels.f90 $(objects)
+$(OBJDIR)/precond_vp_vs_kernels_subs.o: $(SRCDIR)/precond_vp_vs_kernels_subs.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/precond_vp_vs_kernels.o: $(SRCDIR)/precond_vp_vs_kernels.f90 $(OBJDIR)/precond_vp_vs_kernels_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
 $(OBJDIR)/convert_adios_to_binary.o: $(SRCDIR)/convert_adios_to_binary.f90 $(objects)
@@ -79,7 +87,10 @@ $(OBJDIR)/steepDescent.o: $(SRCDIR)/steepDescent.f90 $(objects)
 $(OBJDIR)/conjugateGradient.o: $(SRCDIR)/conjugateGradient.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
-$(OBJDIR)/lbfgs.o: $(SRCDIR)/lbfgs.f90 $(objects)
+$(OBJDIR)/lbfgs_subs.o: $(SRCDIR)/lbfgs_subs.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
+$(OBJDIR)/lbfgs.o: $(SRCDIR)/lbfgs.f90 $(OBJDIR)/lbfgs_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
 $(OBJDIR)/update_model.o: $(SRCDIR)/update_model.f90  $(objects)
@@ -112,6 +123,9 @@ $(OBJDIR)/apply_source_mask.o: $(SRCDIR)/apply_source_mask.f90 $(objects)
 $(OBJDIR)/compute_vp_vs_hess.o: $(SRCDIR)/compute_vp_vs_hess.f90 $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
+$(OBJDIR)/random_probe_lbfgs.o: $(SRCDIR)/random_probing.f90 $(OBJDIR)/lbfgs.o $(OBJDIR)/compute_vp_vs_hess.o $(OBJDIR)/random.o $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_inc)
 
@@ -137,7 +151,7 @@ $(BINDIR)/xprecond_kernels: $(OBJDIR)/precond_kernels.o $(objects)
 $(BINDIR)/xprecond_azi_kernels: $(OBJDIR)/precond_azi_kernels.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
-$(BINDIR)/xprecond_vp_vs_kernels: $(OBJDIR)/precond_vp_vs_kernels.o $(objects)
+$(BINDIR)/xprecond_vp_vs_kernels: $(OBJDIR)/precond_vp_vs_kernels.o $(OBJDIR)/precond_vp_vs_kernels_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xbp2binary: $(OBJDIR)/convert_adios_to_binary.o $(objects)
@@ -149,7 +163,7 @@ $(BINDIR)/xsteepDescent: $(OBJDIR)/steepDescent.o $(objects)
 $(BINDIR)/xcg_direction: $(OBJDIR)/conjugateGradient.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
-$(BINDIR)/xlbfgs: $(OBJDIR)/lbfgs.o $(objects)
+$(BINDIR)/xlbfgs: $(OBJDIR)/lbfgs.o $(OBJDIR)/lbfgs_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xupdate_model: $(OBJDIR)/update_model.o $(objects)
@@ -176,8 +190,14 @@ $(BINDIR)/xabs_kernel: $(OBJDIR)/abs_kernel.o $(objects)
 $(BINDIR)/xsrc_mask: $(OBJDIR)/apply_source_mask.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
+$(BINDIR)/xcompute_vp_vs_hess_subs: $(OBJDIR)/compute_vp_vs_hess_subs.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
 $(BINDIR)/xcompute_vp_vs_hess: $(OBJDIR)/compute_vp_vs_hess.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xrandom_probe_lbfgs: $(OBJDIR)/random_probe_lbfgs.o $(OBJDIR)/random.o $(OBJDIR)/lbfgs_subs.o $(OBJDIR)/precond_vp_vs_kernels_subs.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc) -I$(OBJDIR) -L$(OBJDIR)
 
 clean:
 	rm obj/* bin/*

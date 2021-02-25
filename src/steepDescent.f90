@@ -26,9 +26,9 @@ program main
 
   integer, parameter :: NKERNELS = 4
   character(len=500), parameter :: kernel_names(NKERNELS) = &
-    (/character(len=500) :: "bulk_betah_kl_crust_mantle",&
+    (/character(len=500) :: "bulk_c_kl_crust_mantle",&
                             "bulk_betav_kl_crust_mantle",&
-                            "bulk_c_kl_crust_mantle",&
+                            "bulk_betah_kl_crust_mantle",&
                             "eta_kl_crust_mantle"/)
 
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS):: gradient
