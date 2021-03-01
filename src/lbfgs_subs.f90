@@ -84,7 +84,7 @@ module lbfgs_subs
     real(kind=CUSTOM_REAL), dimension(:, :, :, :, :) :: gradient
 
     ! (NGLLX, NGLLY, NGLLZ, NSPEC, nkernels, niter)
-    real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :), allocatable :: yks, sks
+    real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :) :: yks, sks
 
     ! local variable
     ! (NGLLX, NGLLY, NGLLZ, NSPEC, nkernels, niter)
@@ -125,16 +125,18 @@ module lbfgs_subs
   end subroutine read_all_bp_files
 
   subroutine calculate_LBFGS_direction(niter, nkernels, jacobian, gradient, &
-                                       yks, sks, direction)
+                                       precond, yks, sks, direction)
     integer, intent(in) :: niter
     integer, intent(in) :: nkernels
     real(kind=CUSTOM_REAL), dimension(:, :, :, :), intent(in) :: jacobian
     real(kind=CUSTOM_REAL), dimension(:, :, :, :, :), intent(in) :: gradient
+    real(kind=CUSTOM_REAL), dimension(:, :, :, :, :), intent(in) :: precond
     real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :), intent(in) :: yks, sks
     real(kind=CUSTOM_REAL), dimension(:, :, :, :, :), intent(inout) :: direction
 
     integer :: i
-    real(kind=CUSTOM_REAL) :: tmp, rhok, beta, norm_y
+    real(kind=CUSTOM_REAL) :: tmp, beta
+    !real(kind=CUSTOM_REAL) :: norm_y
     real(kind=CUSTOM_REAL), dimension(:), allocatable :: pk_store, ak_store
 
     if(myrank == 0) print*, '|<============= Calculating LBFGS Direction =============>|'
@@ -161,13 +163,14 @@ module lbfgs_subs
       direction = direction - ak_store(i) * yks(:, :, :, :, :, i)
     enddo
 
-    ! Precondition
-    call Parallel_ComputeL2normSquare(yks(:, :, :, :, :, niter), nkernels, &
-                                      jacobian, norm_y)
+    ! Precondition 1
+    !call Parallel_ComputeL2normSquare(yks(:, :, :, :, :, niter), nkernels, &
+    !                                  jacobian, norm_y)
     !rhok = 1.0 / (pk_store(niter) * norm_y)
-    rhok = 1.0
-    if(myrank == 0) write(*, '(A, ES18.8)') "Precondition coef: ", rhok
-    direction = rhok * direction
+    !direction = rhok * direction
+
+    ! Precondition 2
+    direction = precond * direction
 
     ! second round
     do i=1, niter, 1

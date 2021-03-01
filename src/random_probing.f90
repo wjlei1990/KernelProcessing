@@ -23,25 +23,33 @@ module random_probe_mod
 
   contains
 
-  subroutine get_sys_args(lbfgs_path_file, solver_file, precond_file, output_file_prefix)
+  subroutine get_sys_args(seed_val, lbfgs_path_file, precond_file, solver_file, output_file_prefix)
 
-    character(len=*), intent(out) :: lbfgs_path_file, solver_file, precond_file
+    integer, intent(out) :: seed_val
+    character(len=*), intent(out) :: lbfgs_path_file, precond_file, solver_file
     character(len=*), intent(out) :: output_file_prefix
 
-    call getarg(1, lbfgs_path_file)
-    call getarg(2, solver_file)
-    call getarg(3, precond_file)
-    call getarg(4, output_file_prefix)
+    character(len=128) :: seed_str
 
-    if(trim(lbfgs_path_file) == "" .or. trim(solver_file) == "" .or. &
-      trim(precond_file) == "" .or. trim(output_file_prefix) == "") then
-      call exit_mpi("Usage: ./xrand_probe lbfgs_path_file solver_file precond_file output_file_prefix")
+    call getarg(1, seed_str)
+    call getarg(2, lbfgs_path_file)
+    call getarg(3, precond_file)
+    call getarg(4, solver_file)
+    call getarg(5, output_file_prefix)
+
+    if( trim(seed_str) == "" .or. &
+      trim(lbfgs_path_file) == "" .or. trim(precond_file) == "" .or. &
+      trim(solver_file) == "" .or. trim(output_file_prefix) == "") then
+      call exit_mpi("Usage: ./xrand_probe lbfgs_path_file precond_file solver_file utput_file_prefix")
     endif
 
+    read(seed_str, *) seed_val
+
     if(myrank == 0) then
+      print*, "Random seed: ", seed_val
       print*, "Input L-BFGS path: ", trim(lbfgs_path_file)
-      print*, "Solver file: ", trim(solver_file)
       print*, "Precond file: ", trim(precond_file)
+      print*, "Solver file: ", trim(solver_file)
       print*, "Output file prefix: ", trim(output_file_prefix)
     endif
   end subroutine get_sys_args
@@ -56,15 +64,16 @@ module random_probe_mod
 
     character(len=*), intent(in) :: lbfgs_path_file
 
-    real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ,NSPEC,NKERNELS) :: gradient
+    real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS) :: gradient
     real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :), allocatable :: yks, sks
 
     character(len=512), dimension(:), allocatable :: gradient_files, model_change_files
 
+    call parse_input_path(lbfgs_path_file, niter, gradient_files, model_change_files)
+    if(myrank == 0) print*, "niter: ", niter
+
     allocate(sks(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS, niter))
     allocate(yks(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS, niter))
-
-    call parse_input_path(lbfgs_path_file, niter, gradient_files, model_change_files)
 
     call read_all_bp_files(niter, nkernels, gradient_files, model_change_files, &
                            kernel_names, gradient, yks, sks)
@@ -85,11 +94,12 @@ module random_probe_mod
     real(kind=CUSTOM_REAL) :: threshold = 1.0e-3
 
     hess = 0.0
-    invHess = 0.0
-
     call read_bp_file_real(precond_file, hess_names, hess)
+
+    invHess = 0.0
     call prepare_hessian(hess, hess_names, threshold, invHess)
 
+    precond = 0.0
     ! bulk_c -- Vp precondition
     precond(:, :, :, :, 1) = invHess(:, :, :, :, 1)
 
@@ -101,6 +111,36 @@ module random_probe_mod
     precond(:, :, :, :, 4) = invHess(:, :, :, :, 3)
 
   end subroutine prepare_preconditioner
+
+  subroutine set_random_seed(seed_val)
+    integer :: seed_val
+    integer :: n
+
+    integer, allocatable :: seed(:)
+
+    call random_seed(size=n)
+    allocate(seed(n))
+    ! set the seed array with same value provided by user
+    seed = seed_val
+    call random_seed(put=seed)
+    deallocate(seed)
+
+  end subroutine set_random_seed
+
+
+  subroutine random_sample_array(n)
+    use random, only : random_normal
+
+    integer, intent(in) :: n
+    integer :: i
+    real :: r
+
+    do i =1, n
+      r = random_normal()
+      print*, "Random Sample | ", i , ", " ,r
+    enddo
+
+  end subroutine random_sample_array
 
 
   subroutine random_fill(nkernel, r)
@@ -136,7 +176,8 @@ program main
   use global_var, only : NGLLX, NGLLY, NGLLZ, NSPEC
 
   use random_probe_mod, only : get_sys_args, read_lbfgs_history, &
-    prepare_preconditioner, random_fill
+    prepare_preconditioner, random_fill, set_random_seed, &
+    random_sample_array
   use lbfgs_subs, only : calculate_LBFGS_direction
 
   implicit none
@@ -164,12 +205,13 @@ program main
 
   real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :), allocatable :: yks, sks
 
+  integer :: seed_val, local_seed_val
   integer :: ier
 
   call init_mpi()
 
   if(myrank == 0) print*, "|<---- Get System Args ---->|"
-  call get_sys_args(lbfgs_path_file, solver_file, precond_file, output_file_prefix)
+  call get_sys_args(seed_val, lbfgs_path_file, precond_file, solver_file, output_file_prefix)
 
   call adios_read_init_method(ADIOS_READ_METHOD_BP, MPI_COMM_WORLD, &
                               "verbose=1", ier)
@@ -180,22 +222,30 @@ program main
   if(myrank == 0) print*, "|<---- Calculate Jacobian ---->|"
   call calculate_jacobian_matrix(solver_file, jacobian)
 
-  if(myrank == 0) print*, "|<---- Calculate Jacobian ---->|"
+  if(myrank == 0) print*, "|<---- Preapre preconditioner ---->|"
   call prepare_preconditioner(NKERNELS, NHESS, hess_names, precond_file, precond)
 
+  if(myrank == 0) print*, "|<---- Random Fill Vector ---->|"
+  local_seed_val = seed_val * 10000 + myrank
+  print*, " ==> myrank: ", myrank, " | base seed: ", seed_val, " | local seed: ", local_seed_val
+  call set_random_seed(local_seed_val)
+  if (myrank == 0) call random_sample_array(5)
   call random_fill(NKERNELS, r1)
   call random_fill(NKERNELS, r2)
 
   ! --- l-bfgs random probing ---
   if(myrank == 0) print*, "|<---- Random Probing in L-BFGS loop ---->|"
-  call calculate_LBFGS_direction(niter, NKERNELS, jacobian, r1, yks, sks, r2)
-  r2 = r2 - r1
+  call calculate_LBFGS_direction(niter, NKERNELS, jacobian, r1, precond, yks, sks, r2)
+  r2 = r2 - r1 * precond
 
   ! --- write ---
-  output_file = trim(output_file_prefix) // "_R.bp"
+  if(myrank == 0) print*, "|<---- Write output file ---->|"
+  output_file = trim(output_file_prefix) // "__R.bp"
+  if(myrank == 0) print*, "R saved to: ", trim(output_file)
   call write_bp_file(r1, kernel_names, "KERNELS_GROUP", output_file)
 
-  output_file = trim(output_file_prefix) // "_r.bp"
+  output_file = trim(output_file_prefix) // "__r.bp"
+  if(myrank == 0) print*, "r saved to: ", trim(output_file)
   call write_bp_file(r2, kernel_names, "KERNELS_GROUP", output_file)
 
   deallocate(yks)

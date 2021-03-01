@@ -72,8 +72,8 @@ module precond_vp_vs_kernels_subs
     call min_all_all_cr(minval(hess), minh_all)
 
     if (myrank==0) then
-      write(*, '(A, E12.6)') 'min and max hess after norm', minh_all, maxh_all
-      write(*, '(A, E12.6)') "Hessian Threshold: ", threshold
+      write(*, '(X, A, E12.6, 5X, E12.6)') 'min and max hess after norm: ', minh_all, maxh_all
+      write(*, '(X, A, E12.6)') "Hessian Threshold: ", threshold
       write(*, *) "Number of hess kernels: ", size(hess_names)
     endif
 

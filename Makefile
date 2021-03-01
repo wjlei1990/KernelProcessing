@@ -32,6 +32,7 @@ all: $(BINDIR)/xsteepDescent \
 	$(BINDIR)/xgauss_single \
 	$(BINDIR)/xgauss_multiple \
 	$(BINDIR)/xbp2binary \
+	$(BINDIR)/xascii2bp \
 	$(BINDIR)/xabs_kernel \
 	$(BINDIR)/xcompute_azi_params \
 	$(BINDIR)/xsrc_mask \
@@ -78,7 +79,13 @@ $(OBJDIR)/precond_vp_vs_kernels_subs.o: $(SRCDIR)/precond_vp_vs_kernels_subs.f90
 $(OBJDIR)/precond_vp_vs_kernels.o: $(SRCDIR)/precond_vp_vs_kernels.f90 $(OBJDIR)/precond_vp_vs_kernels_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
-$(OBJDIR)/convert_adios_to_binary.o: $(SRCDIR)/convert_adios_to_binary.f90 $(objects)
+$(OBJDIR)/convert_adios_subs.o: $(SRCDIR)/convert_adios_subs.f90 $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/convert_adios_to_binary.o: $(SRCDIR)/convert_adios_to_binary.f90 $(OBJDIR)/convert_adios_subs.o $(objects)
+	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
+
+$(OBJDIR)/convert_ascii_to_adios.o: $(SRCDIR)/convert_ascii_to_adios.f90 $(OBJDIR)/convert_adios_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -c $< -o $@ $(adios_link) $(adios_inc)
 
 $(OBJDIR)/steepDescent.o: $(SRCDIR)/steepDescent.f90 $(objects)
@@ -154,7 +161,10 @@ $(BINDIR)/xprecond_azi_kernels: $(OBJDIR)/precond_azi_kernels.o $(objects)
 $(BINDIR)/xprecond_vp_vs_kernels: $(OBJDIR)/precond_vp_vs_kernels.o $(OBJDIR)/precond_vp_vs_kernels_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
-$(BINDIR)/xbp2binary: $(OBJDIR)/convert_adios_to_binary.o $(objects)
+$(BINDIR)/xbp2binary: $(OBJDIR)/convert_adios_to_binary.o $(OBJDIR)/convert_adios_subs.o $(objects)
+	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
+
+$(BINDIR)/xascii2bp: $(OBJDIR)/convert_ascii_to_adios.o $(OBJDIR)/convert_adios_subs.o $(objects)
 	$(MPIFC) $(FCFLAGS) -o $@ $^ $(adios_link) $(adios_inc)
 
 $(BINDIR)/xsteepDescent: $(OBJDIR)/steepDescent.o $(objects)

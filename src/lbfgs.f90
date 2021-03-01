@@ -18,7 +18,10 @@ program main
   character(len=512) :: input_path_file, solver_file, outputfn
   character(len=512), dimension(:), allocatable :: gradient_files, model_change_files
 
+  ! jacobian related to the geometry of mesh
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ,NSPEC) :: jacobian
+  ! precond kernels (default = 1.0, no preconditioner applied)
+  real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ,NSPEC,NKERNELS) :: precond = 1.0
   ! most recent gradient (this iteration's gradient)
   real(kind=CUSTOM_REAL), dimension(NGLLX,NGLLY,NGLLZ,NSPEC,NKERNELS) :: gradient
   ! this iterations' search direction
@@ -30,7 +33,6 @@ program main
   real(kind=CUSTOM_REAL), dimension(:, :, :, :, :, :), allocatable :: yks, sks
 
   integer :: ier
-
 
   call init_mpi()
 
@@ -50,7 +52,7 @@ program main
   call calculate_jacobian_matrix(solver_file, jacobian)
 
   if(myrank == 0) print*, "|<---- L-BFGS Direction ---->|"
-  call calculate_LBFGS_direction(niter, NKERNELS, jacobian, gradient, yks, sks, direction)
+  call calculate_LBFGS_direction(niter, NKERNELS, jacobian, gradient, precond, yks, sks, direction)
 
   call write_bp_file(direction, kernel_names, "KERNELS_GROUP", outputfn)
   if(myrank == 0) print*, "LBFGS direction saved: ", trim(outputfn)
