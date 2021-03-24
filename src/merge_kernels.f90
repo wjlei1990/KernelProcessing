@@ -36,9 +36,12 @@ program merge_kernels
 
   integer, parameter:: NKERNELS = 7
   character(len=500), parameter :: kernel_names(NKERNELS) = &
-    (/character(len=500) :: "bulk_betah_kl_crust_mantle", "bulk_betav_kl_crust_mantle", &
-                            "bulk_c_kl_crust_mantle", "eta_kl_crust_mantle",&
-                            "hess_kl_crust_mantle", "hess_kappa_kl_crust_mantle", &
+    (/character(len=500) :: "bulk_c_kl_crust_mantle", &
+                            "bulk_betav_kl_crust_mantle", &
+                            "bulk_betah_kl_crust_mantle", &
+                            "eta_kl_crust_mantle",&
+                            "hess_kl_crust_mantle", &
+                            "hess_kappa_kl_crust_mantle", &
                             "hess_mu_kl_crust_mantle"/)
 
   real(kind=CUSTOM_REAL),dimension(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS):: total_kernels

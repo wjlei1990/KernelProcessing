@@ -154,7 +154,8 @@ module lbfgs_subs
     ! Precondition
     call Parallel_ComputeL2normSquare(yks(:, :, :, :, :, niter), NKERNELS, &
                                       jacobian, norm_y)
-    rhok = 1.0 / (pk_store(niter) * norm_y)
+    !rhok = 1.0 / (pk_store(niter) * norm_y)
+    rhok = 1.0
     if(myrank == 0) write(*, '(A, ES18.8)') "Precondition coef: ", rhok
     direction = rhok * direction
 

@@ -44,36 +44,34 @@ module precond_kernels_sub
     real(CUSTOM_REAL), dimension(:, :, :, :), intent(inout) :: hess, invHess
     real(CUSTOM_REAL), intent(in) :: threshold
 
-    real(kind=CUSTOM_REAL):: maxh_all, minh_all
+    real(kind=CUSTOM_REAL):: maxh_all, minh_all, ratio, damping
 
     call max_all_all_cr(maxval(hess), maxh_all)
     call min_all_all_cr(minval(hess), minh_all)
+    ratio = maxh_all / minh_all
+
+    if (myrank==0) then
+      write(*, *) "Max and Min of hess (before dampening): ", maxh_all, minh_all
+      write(*, *) "Ratio (Max/Min): ", ratio
+    endif
 
     if ( maxh_all < 1.e-18 ) then
       call exit_mpi("hess max value < 1.e-18")
     end if
 
-    if (myrank==0) then
-      write(*, *) "Max and Min of hess: ", maxh_all, minh_all
-      write(*, *) 'Normalize factor(max hess) for all processors ', maxh_all
-    endif
-
-    ! normalized hess
-    hess = hess / maxh_all
+    damping = maxh_all * threshold
+    invHess = 1.0_CUSTOM_REAL / (hess + damping)
 
     call max_all_all_cr(maxval(hess), maxh_all)
     call min_all_all_cr(minval(hess), minh_all)
+    ratio = maxh_all / minh_all
 
     if (myrank==0) then
-      write(*, *) 'min and max hess after norm', minh_all, maxh_all
-      write(*, *) "Hessian Threshold: ", threshold
+      write(*, *) "Threshold used for dampening: ", threshold
+      write(*, *) "Max and Min of invHess: ", maxh_all, minh_all
+      write(*, *) "Ratio (Max/Min): ", ratio
     endif
 
-    where(hess > threshold )
-      invHess = 1.0_CUSTOM_REAL / hess
-    elsewhere
-      invHess = 1.0_CUSTOM_REAL / threshold
-    endwhere
   end subroutine prepare_hessian
 
 end module precond_kernels_sub
@@ -90,8 +88,11 @@ program precond_kernels
 
   integer, parameter :: NKERNELS = 5    !bulk_betah, bulk_betav, bulk_c, eta
   character(len=500), parameter :: kernel_names(NKERNELS) = &
-    (/character(len=500) :: "hess_kl_crust_mantle", "bulk_betah_kl_crust_mantle", &
-                            "bulk_betav_kl_crust_mantle", "Gc_prime_kl_crust_mantle", &
+    (/character(len=500) :: "hess_kl_crust_mantle", &
+                            "bulk_c_kl_crust_mantle", &
+                            "bulk_betah_kl_crust_mantle", &
+                            "bulk_betav_kl_crust_mantle", &
+                            "Gc_prime_kl_crust_mantle", &
                             "Gs_prime_kl_crust_mantle"/)
   integer, parameter :: hess_idx = 1
 

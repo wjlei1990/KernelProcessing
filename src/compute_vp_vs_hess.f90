@@ -87,17 +87,20 @@ program compute_vp_vs_hess
 
   integer, parameter :: NKERNELS = 2
   character(len=500), parameter :: kernel_names(NKERNELS) = &
-    (/character(len=500) :: "hess_kappa_kl_crust_mantle", "hess_mu_kl_crust_mantle"/)
+    (/character(len=500) :: "hess_kappa_kl_crust_mantle", &
+                            "hess_mu_kl_crust_mantle"/)
 
   integer, parameter :: NKERNELS_out = 3
   character(len=500), parameter :: kernel_out_names(NKERNELS_out) = &
-    (/character(len=500) :: "hess_vp_kl_crust_mantle", "hess_vs_kl_crust_mantle", &
+    (/character(len=500) :: "hess_vp_kl_crust_mantle", &
+                            "hess_vs_kl_crust_mantle", &
                             "hess_eta_kl_crust_mantle"/)
 
   integer, parameter :: NMODELS = 3
   character(len=500), parameter :: model_names(NMODELS) = &
-    (/character(len=500) :: "reg1/kappavstore", "reg1/muvstore", "reg1/muhstore"/)
-
+    (/character(len=500) :: "reg1/kappavstore", &
+                            "reg1/muvstore", &
+                            "reg1/muhstore"/)
 
   real(kind=CUSTOM_REAL),dimension(NGLLX, NGLLY, NGLLZ, NSPEC, NKERNELS) :: hess_in
   real(kind=CUSTOM_REAL),dimension(NGLLX, NGLLY, NGLLZ, NSPEC) :: hess_kappa, hess_mu
@@ -127,10 +130,6 @@ program compute_vp_vs_hess
 
   kappa = models(:, :, :, :, 1)
   mu = sqrt((2.0*models(:, :, :, :, 2)**2 + models(:, :, :, :, 3)**2) / 3.0)
-
-  ! WARNING: tmp modification. only for first iteration since error in SPECFEM
-  ! REMOVE LATER !!!
-  !hess_in(:, :, :, :, 1) = 3 * hess_in(:, :, :, :, 1)
 
   hess_kappa = hess_in(:, :, :, :, 1)
   hess_mu = hess_in(:, :, :, :, 2)
