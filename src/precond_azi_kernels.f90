@@ -86,7 +86,7 @@ program precond_kernels
 
   implicit none
 
-  integer, parameter :: NKERNELS = 5    !bulk_betah, bulk_betav, bulk_c, eta
+  integer, parameter :: NKERNELS = 6    !bulk_betah, bulk_betav, bulk_c, eta
   character(len=500), parameter :: kernel_names(NKERNELS) = &
     (/character(len=500) :: "hess_kl_crust_mantle", &
                             "bulk_c_kl_crust_mantle", &

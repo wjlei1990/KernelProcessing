@@ -30,7 +30,7 @@ program main
   use mpi
   use adios_read_mod
   use AdiosIO
-  use global_var, only : NGLLX, NGLLY, NGLLZ, NSPEC, myrank, CUSTOM_REAL
+  use global_var, only : NGLLX, NGLLY, NGLLZ, NSPEC, CUSTOM_REAL
   use global_var, only: init_mpi
   use compute_azi_sub
 
@@ -43,8 +43,8 @@ program main
 
   real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLY, NGLLZ, NSPEC, 2) :: kernels
 
-  character(len=512), parameter :: mu0_str = "reg1/mu0"
-  real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLY, NGLLZ, NSPEC) :: mu0
+  !character(len=512), parameter :: mu0_str = "reg1/mu0"
+  !real(kind=CUSTOM_REAL), dimension(NGLLX, NGLLY, NGLLZ, NSPEC) :: mu0
 
   character(len=512), parameter :: output_names(4) = &
     (/character(len=512) :: "reg1/Gs", "reg1/Gc", "reg1/G0", "reg1/eta"/)
